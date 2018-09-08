@@ -7,12 +7,14 @@
     tools:context=".MainActivity">
 
     <com.neo.pricetextview.PriceTextView
+        android:id="@+id/priceTextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="This is from PriceTextView"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        android:background="#a3a3a3"
+        />
 
 </android.support.constraint.ConstraintLayout>
