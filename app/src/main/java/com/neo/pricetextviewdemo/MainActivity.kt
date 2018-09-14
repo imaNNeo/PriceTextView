@@ -10,6 +10,6 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        priceTextView.text = "1234"
+        priceTextView.number = 1234
     }
 }
