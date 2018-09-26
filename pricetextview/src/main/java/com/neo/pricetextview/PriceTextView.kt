@@ -44,7 +44,7 @@ class PriceTextView @JvmOverloads constructor(
   var maxChars : Int
 
   var maxTextSize = 100.sp.toFloat()
-  var minTextSize = 24.sp.toFloat()
+  var minTextSize = 48.sp.toFloat()
 
   private val textPaint: TextPaint
 
