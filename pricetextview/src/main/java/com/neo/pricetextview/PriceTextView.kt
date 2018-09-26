@@ -9,7 +9,9 @@ import android.graphics.Rect
 import android.text.TextPaint
 import android.util.AttributeSet
 import android.view.View
+import android.view.animation.BounceInterpolator
 import android.view.animation.LinearInterpolator
+import android.view.animation.OvershootInterpolator
 
 /**
  * Created by iman.
@@ -92,6 +94,7 @@ class PriceTextView @JvmOverloads constructor(
       invalidate()
     }
     animatior.interpolator = LinearInterpolator()
+    animatior.duration = 300
     animatior.start()
   }
 
