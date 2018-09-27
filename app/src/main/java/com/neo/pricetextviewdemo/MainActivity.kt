@@ -29,10 +29,6 @@ class MainActivity : AppCompatActivity() {
   }
 
   private fun onDeleteClicked() {
-    if (priceTextView.numberChars.size == 0) {
-      return
-    }
-
     priceTextView.removeNumber()
   }
 }

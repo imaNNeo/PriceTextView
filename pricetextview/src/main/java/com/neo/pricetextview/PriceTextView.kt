@@ -31,22 +31,24 @@ class PriceTextView @JvmOverloads constructor(
   }
 
   var numberChars: ArrayList<Char> = arrayListOf()
+  var defaultShowingChar = '0'
 
   var textSpace: Float
 
-  var maxChars : Int
+  var maxChars: Int
 
   var maxTextSize = context.spToPx(100f)
   var minTextSize = context.spToPx(48f)
 
   private val textPaint: TextPaint
 
-  private val drawingTextBoundRect = Rect()
+  private val drawingNumberTextBoundRect = Rect()
+  private val drawingDefaultTextBoundRect = Rect()
   private val tmpRect2 = Rect()
 
-  var addNumberAnimDuration : Long = 600
-  var addNumberTranslateXAnim : Float = context.pxToDp(180f)
-  var addNumberTranslateYAnim : Float = context.pxToDp(-180f)
+  var addNumberAnimDuration: Long = 600
+  var addNumberAnimTranslateX: Float = context.pxToDp(180f)
+  var addNumberAnimTranslateY: Float = context.pxToDp(-180f)
 
   private val horizontalPadding
     get() = paddingLeft + paddingRight
@@ -62,12 +64,10 @@ class PriceTextView @JvmOverloads constructor(
 
     textSpace = context.pxToDp(16f)
 
-    numberChars.add('0')
-
     maxChars = 8
   }
 
-  private fun calculateTextSize(numbersList : ArrayList<Char>) : Float {
+  private fun calculateTextSize(numbersList: ArrayList<Char>): Float {
     return when {
       numbersList.size < 3 -> maxTextSize
       numbersList.size < 4 -> ((maxTextSize - minTextSize) * 0.9 + minTextSize).toFloat()
@@ -80,7 +80,7 @@ class PriceTextView @JvmOverloads constructor(
     }
   }
 
-  fun addNumber(number : Char) {
+  fun addNumber(number: Char) {
     if (isAnimatingLastNumber) {
       return
     }
@@ -98,13 +98,24 @@ class PriceTextView @JvmOverloads constructor(
 
     isAnimatingLastNumber = true
 
+    if (numberChars.size == 1) {
+      //should remove default number
+      isAnimatingDefaultNumber = true
+    }
+
     val animator = ValueAnimator.ofFloat(1.0f, 0.0f)
     animator.interpolator = LinearInterpolator()
     animator.duration = addNumberAnimDuration
     animator.addUpdateListener {
-      animatingLastNumberPlusX = (it.animatedValue as Float) * addNumberTranslateXAnim
-      animatingLastNumberPlusY = (it.animatedValue as Float) * addNumberTranslateYAnim
+      animatingLastNumberPlusX = (it.animatedValue as Float) * addNumberAnimTranslateX
+      animatingLastNumberPlusY = (it.animatedValue as Float) * addNumberAnimTranslateY
       animatingLastNumberAlpha = (255 - ((it.animatedValue as Float) * 255)).toInt()
+
+      if (isAnimatingDefaultNumber) {
+        animatingDefaultNumberPlusX = - (addNumberAnimTranslateX - animatingLastNumberPlusX)
+        animatingDefaultNumberPlusY = - (addNumberAnimTranslateY - animatingLastNumberPlusY)
+        animatingDefaultNumberAlpha = 255 - animatingLastNumberAlpha
+      }
 
       invalidate()
     }
@@ -115,8 +126,17 @@ class PriceTextView @JvmOverloads constructor(
         animatingLastNumberPlusX = 0f
         animatingLastNumberPlusY = 0f
         animatingLastNumberAlpha = 255
+
+        if (isAnimatingDefaultNumber) {
+          isAnimatingDefaultNumber = false
+          animatingDefaultNumberPlusX = 0f
+          animatingDefaultNumberPlusY = 0f
+          animatingDefaultNumberAlpha = 255
+        }
+
         invalidate()
       }
+
       override fun onAnimationCancel(p0: Animator?) {}
       override fun onAnimationStart(p0: Animator?) {}
     })
@@ -128,7 +148,7 @@ class PriceTextView @JvmOverloads constructor(
       return
     }
 
-    if (numberChars.size <= 1) {
+    if (numberChars.size <= 0) {
       return
     }
 
@@ -139,13 +159,24 @@ class PriceTextView @JvmOverloads constructor(
   private fun animateAndRemoveNumber() {
     isAnimatingLastNumber = true
 
+    if(numberChars.size == 1) {
+      //should show default
+      isAnimatingDefaultNumber = true
+    }
+
     val animator = ValueAnimator.ofFloat(0.0f, 1.0f)
     animator.interpolator = LinearInterpolator()
     animator.duration = addNumberAnimDuration
     animator.addUpdateListener {
-      animatingLastNumberPlusX = (it.animatedValue as Float) * addNumberTranslateXAnim
-      animatingLastNumberPlusY = (it.animatedValue as Float) * addNumberTranslateYAnim
+      animatingLastNumberPlusX = (it.animatedValue as Float) * addNumberAnimTranslateX
+      animatingLastNumberPlusY = (it.animatedValue as Float) * addNumberAnimTranslateY
       animatingLastNumberAlpha = (255 - ((it.animatedValue as Float) * 255)).toInt()
+
+      if (isAnimatingDefaultNumber) {
+        animatingDefaultNumberPlusX = 0f
+        animatingDefaultNumberPlusY = 0f
+        animatingDefaultNumberAlpha = 255 - animatingLastNumberAlpha
+      }
 
       invalidate()
     }
@@ -156,27 +187,36 @@ class PriceTextView @JvmOverloads constructor(
         animatingLastNumberPlusX = 0f
         animatingLastNumberPlusY = 0f
         animatingLastNumberAlpha = 255
+
+        if (isAnimatingDefaultNumber) {
+          isAnimatingDefaultNumber = false
+          animatingDefaultNumberPlusX = 0f
+          animatingDefaultNumberPlusY = 0f
+          animatingDefaultNumberAlpha = 255
+        }
+
         numberChars.removeAt(numberChars.lastIndex)
         invalidate()
       }
+
       override fun onAnimationCancel(p0: Animator?) {}
       override fun onAnimationStart(p0: Animator?) {}
     })
     animator.start()
   }
 
-  private fun animateSize(isAdding : Boolean) {
+  private fun animateSize(isAdding: Boolean) {
 
     isAnimatingLastNumber = true
 
-    val listBeforeAnimate : ArrayList<Char> =
+    val listBeforeAnimate: ArrayList<Char> =
       if (isAdding) {
         ArrayList(numberChars.dropLast(1))
       } else {
         numberChars
       }
 
-    val listAfterAnimate : ArrayList<Char> =
+    val listAfterAnimate: ArrayList<Char> =
       if (isAdding) {
         numberChars
       } else {
@@ -202,7 +242,6 @@ class PriceTextView @JvmOverloads constructor(
     val toBot = (height / 2) + (newRequiredHeight / 2)
     textPaint.textSize = currentTextSize
 
-
     val animator = ValueAnimator.ofFloat(0.0f, 1.0f)
     animator.addUpdateListener {
       textPaint.textSize = currentTextSize + ((it.animatedValue as Float) * (newTextSize - currentTextSize))
@@ -225,6 +264,7 @@ class PriceTextView @JvmOverloads constructor(
 
         invalidate()
       }
+
       override fun onAnimationCancel(p0: Animator?) {}
       override fun onAnimationStart(p0: Animator?) {}
     })
@@ -245,13 +285,23 @@ class PriceTextView @JvmOverloads constructor(
   }
 
   private fun desireWidth(): Float {
-    val numberDesireWidth = getRequiredTextWidth(numberChars, textPaint)
+    val numberDesireWidth = if (numberChars.size > 0) {
+      getRequiredTextWidth(numberChars, textPaint)
+    } else {
+      getRequiredTextWidth(defaultShowingChar, textPaint)
+    }
+
     return numberDesireWidth + horizontalPadding
   }
 
   private fun desireHeight(): Float {
-    val height = getRequiredTextHeight(numberChars, textPaint)
-    val animationNeeded = addNumberTranslateYAnim * 2
+    val height = if (numberChars.size > 0) {
+      getRequiredTextHeight(numberChars, textPaint)
+    } else {
+      getRequiredTextHeight(defaultShowingChar, textPaint)
+    }
+
+    val animationNeeded = addNumberAnimTranslateY * 2
     return height + Math.abs(animationNeeded) + verticalPadding
   }
 
@@ -267,6 +317,156 @@ class PriceTextView @JvmOverloads constructor(
     }
 
     drawText(canvas)
+  }
+
+  var isAnimatingLastNumber = false
+  var animatingLastNumberPlusX = 0f
+  var animatingLastNumberPlusY = 0f
+  var animatingLastNumberAlpha = 255
+
+  var animatingDrawingBoundLeft = 0
+  var animatingDrawingBoundTop = 0
+  var animatingDrawingBoundRight = 0
+  var animatingDrawingBoundBottom = 0
+
+
+  var isAnimatingDefaultNumber = false
+  var animatingDefaultNumberPlusX = 0f
+  var animatingDefaultNumberPlusY = 0f
+  var animatingDefaultNumberAlpha = 255
+
+  private fun drawText(canvas: Canvas?) {
+
+    val requiredWidth: Int =
+      if (numberChars.size > 0) {
+        getRequiredTextWidth(numberChars, textPaint).toInt()
+      } else {
+        getRequiredTextWidth(defaultShowingChar, textPaint).toInt()
+      }
+
+    val requiredHeight: Int =
+      if (numberChars.size > 0) {
+        getRequiredTextHeight(numberChars, textPaint).toInt()
+      } else {
+        getRequiredTextHeight(defaultShowingChar, textPaint).toInt()
+      }
+
+    //Drawing Bound
+    if (!isAnimatingLastNumber) {
+      drawingNumberTextBoundRect.set(
+          (width / 2) - (requiredWidth / 2),
+          (height / 2) - (requiredHeight / 2),
+          (width / 2) + (requiredWidth / 2),
+          (height / 2) + (requiredHeight / 2)
+      )
+    } else {
+      drawingNumberTextBoundRect.set(
+          animatingDrawingBoundLeft,
+          animatingDrawingBoundTop,
+          animatingDrawingBoundRight,
+          animatingDrawingBoundBottom
+      )
+    }
+
+    drawingDefaultTextBoundRect.set(
+        (width / 2) - (requiredWidth / 2),
+        (height / 2) - (requiredHeight / 2),
+        (width / 2) + (requiredWidth / 2),
+        (height / 2) + (requiredHeight / 2)
+    )
+
+    if (DEBUG) {
+      //Draw DrawingBound Rect
+      val p = Paint()
+      p.style = STROKE
+      p.strokeWidth = 2f
+      p.color = Color.RED
+      canvas?.drawRect(drawingNumberTextBoundRect, p)
+    }
+
+
+    //Draw Default Character
+    if (isAnimatingDefaultNumber || numberChars.size == 0) {
+
+      val char = defaultShowingChar
+
+      //Assigned space
+      tmpRect2.set(
+          (drawingDefaultTextBoundRect.left),
+          drawingDefaultTextBoundRect.top,
+          (drawingDefaultTextBoundRect.left),
+          drawingDefaultTextBoundRect.bottom
+      )
+
+      if (DEBUG) {
+        //Draw characters Assigned area rect
+        val pp = Paint()
+        pp.style = STROKE
+        pp.strokeWidth = 2f
+        pp.color = Color.BLACK
+        canvas?.drawRect(tmpRect2, pp)
+      }
+
+      val tmpAlpha = textPaint.alpha
+      textPaint.alpha = animatingDefaultNumberAlpha
+
+      canvas?.drawText(
+          char.toString(),
+          tmpRect2.left.toFloat() + animatingDefaultNumberPlusX,
+          tmpRect2.bottom.toFloat() + animatingDefaultNumberPlusY, textPaint
+      )
+
+      textPaint.alpha = tmpAlpha
+
+      if (DEBUG) {
+        Log.d("SS", "drawingDefaultWidthAnim x : ${tmpRect2.left},  px : $animatingDefaultNumberPlusX, y : ${tmpRect2.bottom}, py : $animatingDefaultNumberPlusY, alpha = $animatingDefaultNumberAlpha")
+      }
+    }
+
+    //Draw Number Characters
+    for (i in 0 until numberChars.size) {
+
+      val char = numberChars[i]
+
+      val w = getRequiredTextWidth(char, textPaint)
+      //Assigned space
+      tmpRect2.set(
+          (drawingNumberTextBoundRect.left + (i * w) + (i * textSpace)).toInt(),
+          drawingNumberTextBoundRect.top,
+          (drawingNumberTextBoundRect.left + (i * w) + (i * textSpace) + w).toInt(),
+          drawingNumberTextBoundRect.bottom
+      )
+
+      if (DEBUG) {
+        //Draw characters Assigned area rect
+        val pp = Paint()
+        pp.style = STROKE
+        pp.strokeWidth = 2f
+        pp.color = Color.BLACK
+        canvas?.drawRect(tmpRect2, pp)
+      }
+
+      if (i == numberChars.size - 1 && isAnimatingLastNumber) {
+        if (DEBUG) {
+          Log.d("SS", "drawWithAnim px : $animatingLastNumberPlusX, py : $animatingLastNumberPlusY, alpha = $animatingLastNumberAlpha")
+        }
+
+        val tmpAlpha = textPaint.alpha
+        textPaint.alpha = animatingLastNumberAlpha
+
+        val drawX = tmpRect2.left.toFloat() + animatingLastNumberPlusX
+        val drawY = tmpRect2.bottom.toFloat() + animatingLastNumberPlusY
+        canvas?.drawText(char.toString(), drawX, drawY, textPaint)
+
+        if (DEBUG) {
+          Log.d("SS", "drawing $char on $drawX, $drawY, with Alpha ${textPaint.alpha}")
+        }
+
+        textPaint.alpha = tmpAlpha
+      } else {
+        canvas?.drawText(char.toString(), tmpRect2.left.toFloat(), tmpRect2.bottom.toFloat(), textPaint)
+      }
+    }
   }
 
   private fun getRequiredTextWidth(
@@ -292,8 +492,8 @@ class PriceTextView @JvmOverloads constructor(
     char: Char,
     textPaint: TextPaint
   ): Float {
-    textPaint.getTextBounds(char.toString(), 0, char.toString().length, drawingTextBoundRect)
-    return drawingTextBoundRect.height()
+    textPaint.getTextBounds(char.toString(), 0, char.toString().length, drawingNumberTextBoundRect)
+    return drawingNumberTextBoundRect.height()
         .toFloat()
   }
 
@@ -311,83 +511,4 @@ class PriceTextView @JvmOverloads constructor(
     return maxHeight
   }
 
-  var isAnimatingLastNumber = false
-  var animatingLastNumberPlusX = 0f
-  var animatingLastNumberPlusY = 0f
-  var animatingLastNumberAlpha = 255
-
-  var animatingDrawingBoundLeft = 0
-  var animatingDrawingBoundTop = 0
-  var animatingDrawingBoundRight = 0
-  var animatingDrawingBoundBottom = 0
-
-
-  private fun drawText(canvas: Canvas?) {
-
-    val requiredWidth = getRequiredTextWidth(numberChars, textPaint).toInt()
-    val requiredHeight = getRequiredTextHeight(numberChars, textPaint).toInt()
-
-    //Drawing Bound
-    if (!isAnimatingLastNumber) {
-      drawingTextBoundRect.set(
-          (width / 2) - (requiredWidth / 2),
-          (height / 2) - (requiredHeight / 2),
-          (width / 2) + (requiredWidth / 2),
-          (height / 2) + (requiredHeight / 2)
-      )
-    } else {
-      drawingTextBoundRect.set(
-          animatingDrawingBoundLeft,
-          animatingDrawingBoundTop,
-          animatingDrawingBoundRight,
-          animatingDrawingBoundBottom
-      )
-    }
-
-    if (DEBUG) {
-      //Draw DrawingBound Rect
-      val p = Paint()
-      p.style = STROKE
-      p.strokeWidth = 2f
-      p.color = Color.RED
-      canvas?.drawRect(drawingTextBoundRect, p)
-    }
-
-    for (i in 0 until numberChars.size) {
-
-      val char = numberChars[i]
-
-      val w = getRequiredTextWidth(char, textPaint);
-      //Assigned space
-      tmpRect2.set(
-          (drawingTextBoundRect.left + (i * w) + (i * textSpace)).toInt(),
-          drawingTextBoundRect.top,
-          (drawingTextBoundRect.left + (i * w) + (i * textSpace) + w).toInt(),
-          drawingTextBoundRect.bottom
-      )
-
-      if (DEBUG) {
-        //Draw characters Assigned area rect
-        val pp = Paint()
-        pp.style = STROKE
-        pp.strokeWidth = 2f
-        pp.color = Color.BLACK
-        canvas?.drawRect(tmpRect2, pp)
-      }
-
-      if (i == numberChars.size - 1 && isAnimatingLastNumber) {
-        Log.d("SS", "drawWithAnim px : $animatingLastNumberPlusX, py : $animatingLastNumberPlusY, alpha = $animatingLastNumberAlpha")
-        val tmpAlpha = textPaint.alpha
-        textPaint.alpha = animatingLastNumberAlpha
-
-        val drawX = tmpRect2.left.toFloat() + animatingLastNumberPlusX
-        val drawY = tmpRect2.bottom.toFloat() + animatingLastNumberPlusY
-        canvas?.drawText(char.toString(), drawX, drawY, textPaint)
-        Log.d("SS", "drawing $char on $drawX, $drawY, with Alpha ${textPaint.alpha}")
-        textPaint.alpha = tmpAlpha
-      } else {
-        canvas?.drawText(char.toString(), tmpRect2.left.toFloat(), tmpRect2.bottom.toFloat(), textPaint)
-      }
-    }
-  }
 }
