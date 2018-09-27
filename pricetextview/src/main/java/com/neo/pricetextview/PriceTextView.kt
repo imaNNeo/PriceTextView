@@ -12,9 +12,7 @@ import android.text.TextPaint
 import android.util.AttributeSet
 import android.util.Log
 import android.view.View
-import android.view.animation.BounceInterpolator
 import android.view.animation.LinearInterpolator
-import android.view.animation.OvershootInterpolator
 
 /**
  * Created by iman.
@@ -38,10 +36,12 @@ class PriceTextView @JvmOverloads constructor(
 
   private val textPaint: TextPaint
 
-  private val tmpRect1 = Rect()
+  private val drawingTextBoundRect = Rect()
   private val tmpRect2 = Rect()
 
-  private var duration : Long = 300
+  var addNumberAnimDuration : Long = 600
+  var addNumberTranslateXAnim : Float = 120.dp.toFloat()
+  var addNumberTranslateYAnim : Float = 12.dp.toFloat()
 
   private val horizontalPadding
     get() = paddingLeft + paddingRight
@@ -81,7 +81,7 @@ class PriceTextView @JvmOverloads constructor(
     }
 
     animateAndAddNumber(number)
-    animateSize()
+    animateSize(true)
   }
 
   private fun animateAndAddNumber(number: Char) {
@@ -91,10 +91,10 @@ class PriceTextView @JvmOverloads constructor(
 
     val animator = ValueAnimator.ofFloat(1.0f, 0.0f)
     animator.interpolator = LinearInterpolator()
-    animator.duration = duration
+    animator.duration = addNumberAnimDuration
     animator.addUpdateListener {
-      animatingLastNumberPlusX = (it.animatedValue as Float) * 24.dp.toFloat()
-      animatingLastNumberPlusY = (it.animatedValue as Float) * 12.dp.toFloat()
+      animatingLastNumberPlusX = (it.animatedValue as Float) * addNumberTranslateXAnim
+      animatingLastNumberPlusY = (it.animatedValue as Float) * addNumberTranslateYAnim
       animatingLastNumberAlpha = (255 - ((it.animatedValue as Float) * 255)).toInt()
 
       invalidate()
@@ -114,18 +114,108 @@ class PriceTextView @JvmOverloads constructor(
     animator.start()
   }
 
-  private fun animateSize() {
+  fun removeNumber() {
+    if (numberChars.size <= 1) {
+      return
+    }
+
+    animateAndRemoveNumber()
+    animateSize(false)
+  }
+
+  private fun animateAndRemoveNumber() {
+    isAnimatingLastNumber = true
+
+    val animator = ValueAnimator.ofFloat(0.0f, 1.0f)
+    animator.interpolator = LinearInterpolator()
+    animator.duration = addNumberAnimDuration
+    animator.addUpdateListener {
+      animatingLastNumberPlusX = (it.animatedValue as Float) * addNumberTranslateXAnim
+      animatingLastNumberPlusY = (it.animatedValue as Float) * addNumberTranslateYAnim
+      animatingLastNumberAlpha = (255 - ((it.animatedValue as Float) * 255)).toInt()
+
+      invalidate()
+    }
+    animator.addListener(object : AnimatorListener {
+      override fun onAnimationRepeat(p0: Animator?) {}
+      override fun onAnimationEnd(p0: Animator?) {
+        isAnimatingLastNumber = false
+        animatingLastNumberPlusX = 0f
+        animatingLastNumberPlusY = 0f
+        animatingLastNumberAlpha = 255
+        numberChars.removeAt(numberChars.lastIndex)
+        invalidate()
+      }
+      override fun onAnimationCancel(p0: Animator?) {}
+      override fun onAnimationStart(p0: Animator?) {}
+    })
+    animator.start()
+  }
+
+  private fun animateSize(isAdding : Boolean) {
+
+    isAnimatingLastNumber = true
+
+    val listBeforeAnimate : ArrayList<Char> =
+      if (isAdding) {
+        ArrayList(numberChars.dropLast(1))
+      } else {
+        numberChars
+      }
+
+    val listAfterAnimate : ArrayList<Char> =
+      if (isAdding) {
+        numberChars
+      } else {
+        ArrayList(numberChars.dropLast(1))
+      }
+
     val newTextSize = calculateTextSize(numberChars)
     val currentTextSize = textPaint.textSize
 
-    val animatior = ValueAnimator.ofFloat(currentTextSize, newTextSize)
-    animatior.addUpdateListener {
-      textPaint.textSize = it.animatedValue as Float
+    val currentRequiredWidth = getRequiredTextWidth(listBeforeAnimate, textPaint).toInt()
+    val currentRequiredHeight = getRequiredTextHeight(listBeforeAnimate, textPaint).toInt()
+    val fromLeft = (width / 2) - (currentRequiredWidth / 2)
+    val fromTop = (height / 2) - (currentRequiredHeight / 2)
+    val fromRight = (width / 2) + (currentRequiredWidth / 2)
+    val fromBot = (height / 2) + (currentRequiredHeight / 2)
+
+    val newRequiredWidth = getRequiredTextWidth(listAfterAnimate, textPaint).toInt()
+    val newRequiredHeight = getRequiredTextHeight(listAfterAnimate, textPaint).toInt()
+    val toLeft = (width / 2) - (newRequiredWidth / 2)
+    val toTop = (height / 2) - (newRequiredHeight / 2)
+    val toRight = (width / 2) + (newRequiredWidth / 2)
+    val toBot = (height / 2) + (newRequiredHeight / 2)
+
+
+    val animator = ValueAnimator.ofFloat(0.0f, 1.0f)
+    animator.addUpdateListener {
+      textPaint.textSize = currentTextSize + ((it.animatedValue as Float) * (newTextSize - currentTextSize))
+      animatingDrawingBoundLeft = (fromLeft + ((it.animatedValue as Float) * (toLeft - fromLeft))).toInt()
+      animatingDrawingBoundTop = (fromTop + ((it.animatedValue as Float) * (toTop - fromTop))).toInt()
+      animatingDrawingBoundRight = (fromRight + ((it.animatedValue as Float) * (toRight - fromRight))).toInt()
+      animatingDrawingBoundBottom = (fromBot + ((it.animatedValue as Float) * (toBot - fromBot))).toInt()
+
       invalidate()
     }
-    animatior.interpolator = LinearInterpolator()
-    animatior.duration = 300
-    animatior.start()
+    animator.addListener(object : AnimatorListener {
+      override fun onAnimationRepeat(p0: Animator?) {}
+      override fun onAnimationEnd(p0: Animator?) {
+        isAnimatingLastNumber = false
+
+        animatingDrawingBoundLeft = 0
+        animatingDrawingBoundTop = 0
+        animatingDrawingBoundRight = 0
+        animatingDrawingBoundBottom = 0
+
+        invalidate()
+      }
+      override fun onAnimationCancel(p0: Animator?) {}
+      override fun onAnimationStart(p0: Animator?) {}
+    })
+    animator.interpolator = LinearInterpolator()
+    animator.duration = addNumberAnimDuration
+    animator.start()
     Log.d("SS", "Start Animating From $currentTextSize, to $newTextSize")
   }
 
@@ -177,8 +267,8 @@ class PriceTextView @JvmOverloads constructor(
     char: Char,
     textPaint: TextPaint
   ): Float {
-    textPaint.getTextBounds(char.toString(), 0, char.toString().length, tmpRect1)
-    return tmpRect1.height()
+    textPaint.getTextBounds(char.toString(), 0, char.toString().length, drawingTextBoundRect)
+    return drawingTextBoundRect.height()
         .toFloat()
   }
 
@@ -201,18 +291,33 @@ class PriceTextView @JvmOverloads constructor(
   var animatingLastNumberPlusY = 0f
   var animatingLastNumberAlpha = 255
 
+  var animatingDrawingBoundLeft = 0
+  var animatingDrawingBoundTop = 0
+  var animatingDrawingBoundRight = 0
+  var animatingDrawingBoundBottom = 0
+
+
   private fun drawText(canvas: Canvas?) {
 
     val requiredWidth = getRequiredTextWidth(numberChars, textPaint).toInt()
     val requiredHeight = getRequiredTextHeight(numberChars, textPaint).toInt()
 
     //Drawing Bound
-    tmpRect1.set(
-        (width / 2) - (requiredWidth / 2),
-        (height / 2) - (requiredHeight / 2),
-        (width / 2) + (requiredWidth / 2),
-        (height / 2) + (requiredHeight / 2)
-    )
+    if (!isAnimatingLastNumber) {
+      drawingTextBoundRect.set(
+          (width / 2) - (requiredWidth / 2),
+          (height / 2) - (requiredHeight / 2),
+          (width / 2) + (requiredWidth / 2),
+          (height / 2) + (requiredHeight / 2)
+      )
+    } else {
+      drawingTextBoundRect.set(
+          animatingDrawingBoundLeft,
+          animatingDrawingBoundTop,
+          animatingDrawingBoundRight,
+          animatingDrawingBoundBottom
+      )
+    }
 
     for (i in 0 until numberChars.size) {
 
@@ -221,10 +326,10 @@ class PriceTextView @JvmOverloads constructor(
       val w = getRequiredTextWidth(char, textPaint);
       //Assigned space
       tmpRect2.set(
-          (tmpRect1.left + (i * w) + (i * textSpace)).toInt(),
-          tmpRect1.top,
-          (tmpRect1.left + (i * w) + (i * textSpace) + w).toInt(),
-          tmpRect1.bottom
+          (drawingTextBoundRect.left + (i * w) + (i * textSpace)).toInt(),
+          drawingTextBoundRect.top,
+          (drawingTextBoundRect.left + (i * w) + (i * textSpace) + w).toInt(),
+          drawingTextBoundRect.bottom
       )
 
       if (i == numberChars.size - 1 && isAnimatingLastNumber) {
