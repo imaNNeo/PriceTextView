@@ -9,6 +9,7 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Paint.Style.STROKE
 import android.graphics.Rect
+import android.graphics.Typeface
 import android.text.TextPaint
 import android.util.AttributeSet
 import android.util.Log
@@ -27,7 +28,7 @@ class PriceTextView @JvmOverloads constructor(
 ) : View(context, attrs, defStyleAttr) {
 
   companion object {
-    const val DEBUG = true
+    const val DEBUG = false
   }
 
   var numberChars: ArrayList<Char> = arrayListOf()
@@ -278,6 +279,14 @@ class PriceTextView @JvmOverloads constructor(
     Log.d("SS", "Start Animating From $currentTextSize, to $newTextSize")
   }
 
+  fun setTypeface(tf : Typeface?) {
+    if (tf == null) {
+      return
+    }
+
+    textPaint.typeface = tf
+    requestLayout()
+  }
   override fun onMeasure(
     widthMeasureSpec: Int,
     heightMeasureSpec: Int
@@ -340,18 +349,21 @@ class PriceTextView @JvmOverloads constructor(
 
   private fun drawText(canvas: Canvas?) {
 
+    val defaultCharWidth = getRequiredTextHeight(defaultShowingChar, textPaint).toInt()
+    val defaultCharHeight = getRequiredTextWidth(defaultShowingChar, textPaint).toInt()
+
     val requiredWidth: Int =
       if (numberChars.size > 0) {
         getRequiredTextWidth(numberChars, textPaint).toInt()
       } else {
-        getRequiredTextWidth(defaultShowingChar, textPaint).toInt()
+        defaultCharHeight
       }
 
     val requiredHeight: Int =
       if (numberChars.size > 0) {
         getRequiredTextHeight(numberChars, textPaint).toInt()
       } else {
-        getRequiredTextHeight(defaultShowingChar, textPaint).toInt()
+        defaultCharWidth
       }
 
     //Drawing Bound
@@ -372,10 +384,10 @@ class PriceTextView @JvmOverloads constructor(
     }
 
     drawingDefaultTextBoundRect.set(
-        (width / 2) - (requiredWidth / 2),
-        (height / 2) - (requiredHeight / 2),
-        (width / 2) + (requiredWidth / 2),
-        (height / 2) + (requiredHeight / 2)
+        (width / 2) - (defaultCharWidth / 2),
+        (height / 2) - (defaultCharHeight / 2),
+        (width / 2) + (defaultCharWidth / 2),
+        (height / 2) + (defaultCharHeight / 2)
     )
 
     if (DEBUG) {
@@ -429,11 +441,16 @@ class PriceTextView @JvmOverloads constructor(
     }
 
     //Draw Number Characters
+    var widthSum = 0f
     for (i in 0 until numberChars.size) {
 
       val char = numberChars[i]
+
+      widthSum += getRequiredTextWidth(char, textPaint)
+
       val currentCharNumberWidth = getRequiredTextWidth(char, textPaint)
       val thousandsSeparatorWidth = getRequiredTextWidth(thousandsSeparatorChar, textPaint)
+      val previousSumWidth = widthSum - currentCharNumberWidth
 
       //about separator
       var separatorsCountToDraw = 0
@@ -453,7 +470,7 @@ class PriceTextView @JvmOverloads constructor(
       //Assigned number char bounds
       var left =
         (drawingNumberTextBoundRect.left +
-            (i * currentCharNumberWidth) + (i * textSpace) +
+            previousSumWidth + (i * textSpace) +
             separatorsCountToDrawOnThisPos * thousandsSeparatorWidth).toInt()
 
       val top = drawingNumberTextBoundRect.top

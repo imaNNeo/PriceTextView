@@ -7,15 +7,27 @@
     tools:context=".MainActivity">
 
     <com.neo.pricetextview.PriceTextView
-        android:id="@+id/priceTextView"
+        android:id="@+id/priceTextView1"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/priceTextView2"
         android:layout_marginLeft="16dp"
         android:layout_marginRight="16dp"
-        android:layout_marginTop="94dp"
+        />
+
+    <com.neo.pricetextview.PriceTextView
+        android:id="@+id/priceTextView2"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/priceTextView1"
+        app:layout_constraintBottom_toTopOf="@id/btn_1"
+        android:layout_marginLeft="16dp"
+        android:layout_marginRight="16dp"
         />
 
     <View
@@ -24,7 +36,7 @@
         android:layout_height="1dp"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/priceTextView"
+        app:layout_constraintTop_toBottomOf="@id/priceTextView2"
         android:layout_marginTop="32dp"
         app:layout_constraintHorizontal_chainStyle="packed"
         />
