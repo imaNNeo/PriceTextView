@@ -26,6 +26,10 @@ class PriceTextView @JvmOverloads constructor(
   defStyleAttr: Int = 0
 ) : View(context, attrs, defStyleAttr) {
 
+  companion object {
+    const val DEBUG = true
+  }
+
   var numberChars: ArrayList<Char> = arrayListOf()
 
   var textSpace: Float
@@ -41,8 +45,8 @@ class PriceTextView @JvmOverloads constructor(
   private val tmpRect2 = Rect()
 
   var addNumberAnimDuration : Long = 600
-  var addNumberTranslateXAnim : Float = context.pxToDp(120f)
-  var addNumberTranslateYAnim : Float = context.pxToDp(12f)
+  var addNumberTranslateXAnim : Float = context.pxToDp(180f)
+  var addNumberTranslateYAnim : Float = context.pxToDp(-180f)
 
   private val horizontalPadding
     get() = paddingLeft + paddingRight
@@ -247,10 +251,20 @@ class PriceTextView @JvmOverloads constructor(
 
   private fun desireHeight(): Float {
     val height = getRequiredTextHeight(numberChars, textPaint)
-    return height + verticalPadding
+    val animationNeeded = addNumberTranslateYAnim * 2
+    return height + Math.abs(animationNeeded) + verticalPadding
   }
 
   override fun onDraw(canvas: Canvas?) {
+
+    if (DEBUG) {
+      //Draw View Rect
+      val p = Paint()
+      p.style = STROKE
+      p.strokeWidth = 2f
+      p.color = Color.BLUE
+      canvas?.drawRect(0F, 0F, width.toFloat(), height.toFloat(), p)
+    }
 
     drawText(canvas)
   }
@@ -330,11 +344,14 @@ class PriceTextView @JvmOverloads constructor(
       )
     }
 
-    val p = Paint()
-    p.style = STROKE
-    p.strokeWidth = 2f
-    p.color = Color.RED
-    canvas?.drawRect(drawingTextBoundRect, p)
+    if (DEBUG) {
+      //Draw DrawingBound Rect
+      val p = Paint()
+      p.style = STROKE
+      p.strokeWidth = 2f
+      p.color = Color.RED
+      canvas?.drawRect(drawingTextBoundRect, p)
+    }
 
     for (i in 0 until numberChars.size) {
 
@@ -349,11 +366,14 @@ class PriceTextView @JvmOverloads constructor(
           drawingTextBoundRect.bottom
       )
 
-      val pp = Paint()
-      pp.style = STROKE
-      pp.strokeWidth = 2f
-      pp.color = Color.BLACK
-      canvas?.drawRect(tmpRect2, pp)
+      if (DEBUG) {
+        //Draw characters Assigned area rect
+        val pp = Paint()
+        pp.style = STROKE
+        pp.strokeWidth = 2f
+        pp.color = Color.BLACK
+        canvas?.drawRect(tmpRect2, pp)
+      }
 
       if (i == numberChars.size - 1 && isAnimatingLastNumber) {
         Log.d("SS", "drawWithAnim px : $animatingLastNumberPlusX, py : $animatingLastNumberPlusY, alpha = $animatingLastNumberAlpha")
