@@ -32,6 +32,9 @@ class PriceTextView @JvmOverloads constructor(
 
   var numberChars: ArrayList<Char> = arrayListOf()
   var defaultShowingChar = '0'
+  var thousandsSeparatorChar = ','
+
+  var enabledShowingThousandsSeparator = true
 
   var textSpace: Float
 
@@ -44,9 +47,10 @@ class PriceTextView @JvmOverloads constructor(
 
   private val drawingNumberTextBoundRect = Rect()
   private val drawingDefaultTextBoundRect = Rect()
+  private val tmpRect1 = Rect()
   private val tmpRect2 = Rect()
 
-  var addNumberAnimDuration: Long = 600
+  var addNumberAnimDuration: Long = 250
   var addNumberAnimTranslateX: Float = context.pxToDp(180f)
   var addNumberAnimTranslateY: Float = context.pxToDp(-180f)
 
@@ -62,7 +66,7 @@ class PriceTextView @JvmOverloads constructor(
       textSize = maxTextSize
     }
 
-    textSpace = context.pxToDp(16f)
+    textSpace = context.pxToDp(0f)
 
     maxChars = 8
   }
@@ -112,8 +116,8 @@ class PriceTextView @JvmOverloads constructor(
       animatingLastNumberAlpha = (255 - ((it.animatedValue as Float) * 255)).toInt()
 
       if (isAnimatingDefaultNumber) {
-        animatingDefaultNumberPlusX = - (addNumberAnimTranslateX - animatingLastNumberPlusX)
-        animatingDefaultNumberPlusY = - (addNumberAnimTranslateY - animatingLastNumberPlusY)
+        animatingDefaultNumberPlusX = -(addNumberAnimTranslateX - animatingLastNumberPlusX)
+        animatingDefaultNumberPlusY = -(addNumberAnimTranslateY - animatingLastNumberPlusY)
         animatingDefaultNumberAlpha = 255 - animatingLastNumberAlpha
       }
 
@@ -159,7 +163,7 @@ class PriceTextView @JvmOverloads constructor(
   private fun animateAndRemoveNumber() {
     isAnimatingLastNumber = true
 
-    if(numberChars.size == 1) {
+    if (numberChars.size == 1) {
       //should show default
       isAnimatingDefaultNumber = true
     }
@@ -329,7 +333,6 @@ class PriceTextView @JvmOverloads constructor(
   var animatingDrawingBoundRight = 0
   var animatingDrawingBoundBottom = 0
 
-
   var isAnimatingDefaultNumber = false
   var animatingDefaultNumberPlusX = 0f
   var animatingDefaultNumberPlusY = 0f
@@ -384,7 +387,6 @@ class PriceTextView @JvmOverloads constructor(
       canvas?.drawRect(drawingNumberTextBoundRect, p)
     }
 
-
     //Draw Default Character
     if (isAnimatingDefaultNumber || numberChars.size == 0) {
 
@@ -419,7 +421,10 @@ class PriceTextView @JvmOverloads constructor(
       textPaint.alpha = tmpAlpha
 
       if (DEBUG) {
-        Log.d("SS", "drawingDefaultWidthAnim x : ${tmpRect2.left},  px : $animatingDefaultNumberPlusX, y : ${tmpRect2.bottom}, py : $animatingDefaultNumberPlusY, alpha = $animatingDefaultNumberAlpha")
+        Log.d(
+            "SS",
+            "drawingDefaultWidthAnim x : ${tmpRect2.left},  px : $animatingDefaultNumberPlusX, y : ${tmpRect2.bottom}, py : $animatingDefaultNumberPlusY, alpha = $animatingDefaultNumberAlpha"
+        )
       }
     }
 
@@ -427,15 +432,55 @@ class PriceTextView @JvmOverloads constructor(
     for (i in 0 until numberChars.size) {
 
       val char = numberChars[i]
+      val currentCharNumberWidth = getRequiredTextWidth(char, textPaint)
+      val thousandsSeparatorWidth = getRequiredTextWidth(thousandsSeparatorChar, textPaint)
 
-      val w = getRequiredTextWidth(char, textPaint)
-      //Assigned space
-      tmpRect2.set(
-          (drawingNumberTextBoundRect.left + (i * w) + (i * textSpace)).toInt(),
-          drawingNumberTextBoundRect.top,
-          (drawingNumberTextBoundRect.left + (i * w) + (i * textSpace) + w).toInt(),
-          drawingNumberTextBoundRect.bottom
-      )
+      //about separator
+      var separatorsCountToDraw = 0
+      var separatorsCountToDrawOnThisPos = 0
+      var shouldDrawSeparatorAtThisPos = false
+      if (enabledShowingThousandsSeparator) {
+        separatorsCountToDraw = (numberChars.size - 1) / 3
+        separatorsCountToDrawOnThisPos = ((numberChars.size - 1) / 3) - ((numberChars.size - (i + 1)) / 3)
+        shouldDrawSeparatorAtThisPos =
+            (numberChars.size > 3) &&
+            (i != numberChars.size - 1) &&
+            (i == numberChars.size - (((numberChars.size - (i + 1)) / 3) * 3) - 1)
+      }
+
+      Log.d("FF", "i : $i, separatorsCountToDraw : $separatorsCountToDraw, separatorsCountToDrawOnThisPos : $separatorsCountToDrawOnThisPos, shouldDrawSeparatorAtThisPos : $shouldDrawSeparatorAtThisPos")
+
+      //Assigned number char bounds
+      var left =
+        (drawingNumberTextBoundRect.left +
+            (i * currentCharNumberWidth) + (i * textSpace) +
+            separatorsCountToDrawOnThisPos * thousandsSeparatorWidth).toInt()
+
+      val top = drawingNumberTextBoundRect.top
+      val right = (left + currentCharNumberWidth).toInt()
+      val bot = drawingNumberTextBoundRect.bottom
+      tmpRect2.set(left, top, right, bot)
+
+      //Assigned separator char bounds
+      if (enabledShowingThousandsSeparator) {
+        if (shouldDrawSeparatorAtThisPos) {
+          //Should Draw at this position
+          val left = tmpRect2.right
+          val top = tmpRect2.top
+          val right = (tmpRect2.left + thousandsSeparatorWidth).toInt()
+          val bot = tmpRect2.bottom
+          tmpRect1.set(left, top, right, bot)
+        }
+
+        if (DEBUG) {
+          //Draw characters Assigned area rect
+          val pp = Paint()
+          pp.style = STROKE
+          pp.strokeWidth = 2f
+          pp.color = Color.BLACK
+          canvas?.drawRect(tmpRect2, pp)
+        }
+      }
 
       if (DEBUG) {
         //Draw characters Assigned area rect
@@ -465,6 +510,12 @@ class PriceTextView @JvmOverloads constructor(
         textPaint.alpha = tmpAlpha
       } else {
         canvas?.drawText(char.toString(), tmpRect2.left.toFloat(), tmpRect2.bottom.toFloat(), textPaint)
+
+        if (separatorsCountToDraw > 0) {
+          if ((i + 1) % 3 == 0) {
+            canvas?.drawText(thousandsSeparatorChar.toString(), tmpRect1.left.toFloat(), tmpRect1.bottom.toFloat(), textPaint)
+          }
+        }
       }
     }
   }
@@ -485,6 +536,16 @@ class PriceTextView @JvmOverloads constructor(
       requiredWidth += getRequiredTextWidth(c, textPaint) + textSpace.toInt()
     }
     requiredWidth -= textSpace.toInt()
+
+    //add space for separators
+    if (enabledShowingThousandsSeparator) {
+      val separatorsCount = (chars.size - 1) / 3
+      if (separatorsCount > 0) {
+        val w = getRequiredTextWidth(thousandsSeparatorChar, textPaint)
+        requiredWidth += (w * separatorsCount)
+      }
+    }
+
     return requiredWidth
   }
 
