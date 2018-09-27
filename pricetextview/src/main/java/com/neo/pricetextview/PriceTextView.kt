@@ -77,6 +77,10 @@ class PriceTextView @JvmOverloads constructor(
   }
 
   fun addNumber(number : Char) {
+    if (isAnimatingLastNumber) {
+      return
+    }
+
     if (numberChars.size >= maxChars) {
       return
     }
@@ -116,6 +120,10 @@ class PriceTextView @JvmOverloads constructor(
   }
 
   fun removeNumber() {
+    if (isAnimatingLastNumber) {
+      return
+    }
+
     if (numberChars.size <= 1) {
       return
     }
