@@ -28,7 +28,7 @@ class PriceTextView @JvmOverloads constructor(
 ) : View(context, attrs, defStyleAttr) {
 
   companion object {
-    const val DEBUG = false
+    const val DEBUG = true
   }
 
   var numberChars: ArrayList<Char> = arrayListOf()
