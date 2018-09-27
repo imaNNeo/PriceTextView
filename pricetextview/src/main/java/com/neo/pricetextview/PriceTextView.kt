@@ -7,6 +7,7 @@ import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
+import android.graphics.Paint.Style.STROKE
 import android.graphics.Rect
 import android.text.TextPaint
 import android.util.AttributeSet
@@ -180,12 +181,14 @@ class PriceTextView @JvmOverloads constructor(
     val fromRight = (width / 2) + (currentRequiredWidth / 2)
     val fromBot = (height / 2) + (currentRequiredHeight / 2)
 
+    textPaint.textSize = newTextSize
     val newRequiredWidth = getRequiredTextWidth(listAfterAnimate, textPaint).toInt()
     val newRequiredHeight = getRequiredTextHeight(listAfterAnimate, textPaint).toInt()
     val toLeft = (width / 2) - (newRequiredWidth / 2)
     val toTop = (height / 2) - (newRequiredHeight / 2)
     val toRight = (width / 2) + (newRequiredWidth / 2)
     val toBot = (height / 2) + (newRequiredHeight / 2)
+    textPaint.textSize = currentTextSize
 
 
     val animator = ValueAnimator.ofFloat(0.0f, 1.0f)
@@ -319,6 +322,12 @@ class PriceTextView @JvmOverloads constructor(
       )
     }
 
+    val p = Paint()
+    p.style = STROKE
+    p.strokeWidth = 2f
+    p.color = Color.RED
+    canvas?.drawRect(drawingTextBoundRect, p)
+
     for (i in 0 until numberChars.size) {
 
       val char = numberChars[i]
@@ -331,6 +340,12 @@ class PriceTextView @JvmOverloads constructor(
           (drawingTextBoundRect.left + (i * w) + (i * textSpace) + w).toInt(),
           drawingTextBoundRect.bottom
       )
+
+      val pp = Paint()
+      pp.style = STROKE
+      pp.strokeWidth = 2f
+      pp.color = Color.BLACK
+      canvas?.drawRect(tmpRect2, pp)
 
       if (i == numberChars.size - 1 && isAnimatingLastNumber) {
         Log.d("SS", "drawWithAnim px : $animatingLastNumberPlusX, py : $animatingLastNumberPlusY, alpha = $animatingLastNumberAlpha")
