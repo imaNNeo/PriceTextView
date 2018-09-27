@@ -32,8 +32,8 @@ class PriceTextView @JvmOverloads constructor(
 
   var maxChars : Int
 
-  var maxTextSize = 100.sp.toFloat()
-  var minTextSize = 48.sp.toFloat()
+  var maxTextSize = context.spToPx(100f)
+  var minTextSize = context.spToPx(48f)
 
   private val textPaint: TextPaint
 
@@ -41,8 +41,8 @@ class PriceTextView @JvmOverloads constructor(
   private val tmpRect2 = Rect()
 
   var addNumberAnimDuration : Long = 600
-  var addNumberTranslateXAnim : Float = 120.dp.toFloat()
-  var addNumberTranslateYAnim : Float = 12.dp.toFloat()
+  var addNumberTranslateXAnim : Float = context.pxToDp(120f)
+  var addNumberTranslateYAnim : Float = context.pxToDp(12f)
 
   private val horizontalPadding
     get() = paddingLeft + paddingRight
@@ -56,7 +56,7 @@ class PriceTextView @JvmOverloads constructor(
       textSize = maxTextSize
     }
 
-    textSpace = 16.dp.toFloat()
+    textSpace = context.pxToDp(16f)
 
     numberChars.add('0')
 

@@ -1,21 +1,28 @@
 package com.neo.pricetextview
 
-import android.content.res.Resources
-import android.util.TypedValue
+import android.content.Context
+import android.util.DisplayMetrics
 
 /**
  * Created by iman.
  * iman.neofight@gmail.com
  */
+fun Context.dpToPx(dp: Float): Float {
+  val metrics = resources.displayMetrics
+  return dp * (metrics.densityDpi.toFloat() / DisplayMetrics.DENSITY_DEFAULT)
+}
 
-val Float.sp: Int
-    get() = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, this, Resources.getSystem().displayMetrics).toInt()
+fun Context.pxToDp(px: Float): Float {
+  val metrics = resources.displayMetrics
+  return px / (metrics.densityDpi.toFloat() / DisplayMetrics.DENSITY_DEFAULT)
+}
 
-val Int.sp: Int
-    get() = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, this.toFloat(), Resources.getSystem().displayMetrics).toInt()
+fun Context.spToPx(sp : Float) : Float{
+  val fontScale = resources.displayMetrics.scaledDensity
+  return sp * fontScale + 0.5f
+}
 
-val Int.dp: Int
-    get() = (this / Resources.getSystem().displayMetrics.density).toInt()
-
-val Int.px: Int
-    get() = (this * Resources.getSystem().displayMetrics.density).toInt()
+fun Context.pxToSp(px : Float) : Float{
+  val fontScale = resources.displayMetrics.scaledDensity
+  return px / fontScale + 0.5f
+}
