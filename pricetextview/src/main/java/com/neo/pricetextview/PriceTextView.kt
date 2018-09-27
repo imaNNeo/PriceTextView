@@ -1,5 +1,7 @@
 package com.neo.pricetextview
 
+import android.animation.Animator
+import android.animation.Animator.AnimatorListener
 import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.Canvas
@@ -8,6 +10,7 @@ import android.graphics.Paint
 import android.graphics.Rect
 import android.text.TextPaint
 import android.util.AttributeSet
+import android.util.Log
 import android.view.View
 import android.view.animation.BounceInterpolator
 import android.view.animation.LinearInterpolator
@@ -24,22 +27,7 @@ class PriceTextView @JvmOverloads constructor(
   defStyleAttr: Int = 0
 ) : View(context, attrs, defStyleAttr) {
 
-  var number: String = "0"
-    set(value) {
-      field = if (value.isEmpty()) {
-        "0"
-      } else {
-        if (value.length <= maxChars) {
-          value
-        } else {
-          field
-        }
-      }
-      numberChars = field.toCharArray()
-      animateSize()
-    }
-
-  var numberChars: CharArray = charArrayOf()
+  var numberChars: ArrayList<Char> = arrayListOf()
 
   var textSpace: Float
 
@@ -52,6 +40,8 @@ class PriceTextView @JvmOverloads constructor(
 
   private val tmpRect1 = Rect()
   private val tmpRect2 = Rect()
+
+  private var duration : Long = 300
 
   private val horizontalPadding
     get() = paddingLeft + paddingRight
@@ -67,28 +57,68 @@ class PriceTextView @JvmOverloads constructor(
 
     textSpace = 16.dp.toFloat()
 
-    number = "0"
+    numberChars.add('0')
 
     maxChars = 8
   }
 
-  private fun calculateTextSize(text : String) : Float {
+  private fun calculateTextSize(numbersList : ArrayList<Char>) : Float {
     return when {
-      text.length < 3 -> maxTextSize
-      text.length < 4 -> ((maxTextSize - minTextSize) * 0.9 + minTextSize).toFloat()
-      text.length < 5 -> ((maxTextSize - minTextSize) * 0.7 + minTextSize).toFloat()
-      text.length < 6 -> ((maxTextSize - minTextSize) * 0.5 + minTextSize).toFloat()
-      text.length < 7 -> ((maxTextSize - minTextSize) * 0.3 + minTextSize).toFloat()
-      text.length < 8 -> ((maxTextSize - minTextSize) * 0.1 + minTextSize).toFloat()
-      text.length < 9 -> minTextSize
+      numbersList.size < 3 -> maxTextSize
+      numbersList.size < 4 -> ((maxTextSize - minTextSize) * 0.9 + minTextSize).toFloat()
+      numbersList.size < 5 -> ((maxTextSize - minTextSize) * 0.7 + minTextSize).toFloat()
+      numbersList.size < 6 -> ((maxTextSize - minTextSize) * 0.5 + minTextSize).toFloat()
+      numbersList.size < 7 -> ((maxTextSize - minTextSize) * 0.3 + minTextSize).toFloat()
+      numbersList.size < 8 -> ((maxTextSize - minTextSize) * 0.1 + minTextSize).toFloat()
+      numbersList.size < 9 -> minTextSize
       else -> maxTextSize
     }
   }
 
-  private fun animateSize() {
-    val newTextSize = calculateTextSize(number)
+  fun addNumber(number : Char) {
+    if (numberChars.size >= maxChars) {
+      return
+    }
 
-    val animatior = ValueAnimator.ofFloat(textPaint.textSize, newTextSize)
+    animateAndAddNumber(number)
+    animateSize()
+  }
+
+  private fun animateAndAddNumber(number: Char) {
+    numberChars.add(number)
+
+    isAnimatingLastNumber = true
+
+    val animator = ValueAnimator.ofFloat(1.0f, 0.0f)
+    animator.interpolator = LinearInterpolator()
+    animator.duration = duration
+    animator.addUpdateListener {
+      animatingLastNumberPlusX = (it.animatedValue as Float) * 24.dp.toFloat()
+      animatingLastNumberPlusY = (it.animatedValue as Float) * 12.dp.toFloat()
+      animatingLastNumberAlpha = (255 - ((it.animatedValue as Float) * 255)).toInt()
+
+      invalidate()
+    }
+    animator.addListener(object : AnimatorListener {
+      override fun onAnimationRepeat(p0: Animator?) {}
+      override fun onAnimationEnd(p0: Animator?) {
+        isAnimatingLastNumber = false
+        animatingLastNumberPlusX = 0f
+        animatingLastNumberPlusY = 0f
+        animatingLastNumberAlpha = 255
+        invalidate()
+      }
+      override fun onAnimationCancel(p0: Animator?) {}
+      override fun onAnimationStart(p0: Animator?) {}
+    })
+    animator.start()
+  }
+
+  private fun animateSize() {
+    val newTextSize = calculateTextSize(numberChars)
+    val currentTextSize = textPaint.textSize
+
+    val animatior = ValueAnimator.ofFloat(currentTextSize, newTextSize)
     animatior.addUpdateListener {
       textPaint.textSize = it.animatedValue as Float
       invalidate()
@@ -96,6 +126,7 @@ class PriceTextView @JvmOverloads constructor(
     animatior.interpolator = LinearInterpolator()
     animatior.duration = 300
     animatior.start()
+    Log.d("SS", "Start Animating From $currentTextSize, to $newTextSize")
   }
 
   override fun onMeasure(
@@ -131,7 +162,7 @@ class PriceTextView @JvmOverloads constructor(
   }
 
   private fun getRequiredTextWidth(
-    chars: CharArray,
+    chars: ArrayList<Char>,
     textPaint: TextPaint
   ): Float {
     var requiredWidth = 0f
@@ -152,7 +183,7 @@ class PriceTextView @JvmOverloads constructor(
   }
 
   private fun getRequiredTextHeight(
-    chars: CharArray,
+    chars: ArrayList<Char>,
     textPaint: TextPaint
   ): Float {
     var maxHeight = 0f
@@ -164,6 +195,11 @@ class PriceTextView @JvmOverloads constructor(
     }
     return maxHeight
   }
+
+  var isAnimatingLastNumber = false
+  var animatingLastNumberPlusX = 0f
+  var animatingLastNumberPlusY = 0f
+  var animatingLastNumberAlpha = 255
 
   private fun drawText(canvas: Canvas?) {
 
@@ -191,7 +227,19 @@ class PriceTextView @JvmOverloads constructor(
           tmpRect1.bottom
       )
 
-      canvas?.drawText(char.toString(), tmpRect2.left.toFloat(), tmpRect2.bottom.toFloat(), textPaint)
+      if (i == numberChars.size - 1 && isAnimatingLastNumber) {
+        Log.d("SS", "drawWithAnim px : $animatingLastNumberPlusX, py : $animatingLastNumberPlusY, alpha = $animatingLastNumberAlpha")
+        val tmpAlpha = textPaint.alpha
+        textPaint.alpha = animatingLastNumberAlpha
+
+        val drawX = tmpRect2.left.toFloat() + animatingLastNumberPlusX
+        val drawY = tmpRect2.bottom.toFloat() + animatingLastNumberPlusY
+        canvas?.drawText(char.toString(), drawX, drawY, textPaint)
+        Log.d("SS", "drawing $char on $drawX, $drawY, with Alpha ${textPaint.alpha}")
+        textPaint.alpha = tmpAlpha
+      } else {
+        canvas?.drawText(char.toString(), tmpRect2.left.toFloat(), tmpRect2.bottom.toFloat(), textPaint)
+      }
     }
   }
 }

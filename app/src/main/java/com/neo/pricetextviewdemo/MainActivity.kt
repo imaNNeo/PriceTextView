@@ -25,14 +25,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun onNumberClicked(i: Int) {
-        priceTextView.number += i.toString()
+        priceTextView.addNumber(i.toString().toCharArray()[0])
     }
 
     private fun onDeleteClicked() {
-        if (priceTextView.number.isEmpty()) {
+        if (priceTextView.numberChars.size == 0) {
             return
         }
 
-        priceTextView.number = priceTextView.number.dropLast(1)
+//        priceTextView.number = priceTextView.number.dropLast(1)
     }
 }
