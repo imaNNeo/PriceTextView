@@ -41,10 +41,16 @@ class PriceTextView @JvmOverloads constructor(
 
   var maxChars: Int
 
+  var preText: String
+  var preTextSize : Float
+  var preTextColor : Int
+  var preTextMargin : Float
+
   var maxTextSize = context.spToPx(100f)
   var minTextSize = context.spToPx(48f)
 
   private val textPaint: TextPaint
+  private val preTextPaint: TextPaint
 
   private val drawingNumberTextBoundRect = Rect()
   private val drawingDefaultTextBoundRect = Rect()
@@ -66,6 +72,15 @@ class PriceTextView @JvmOverloads constructor(
       color = Color.BLACK
       textSize = maxTextSize
     }
+
+    preText = "pre"
+    preTextColor = Color.BLACK
+    preTextSize = context.spToPx(20f)
+    preTextPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+      color = preTextColor
+      textSize = preTextSize
+    }
+    preTextMargin = context.dpToPx(8f)
 
     textSpace = context.pxToDp(0f)
 
@@ -299,7 +314,10 @@ class PriceTextView @JvmOverloads constructor(
 
   private fun desireWidth(): Float {
     val numberDesireWidth = if (numberChars.size > 0) {
-      getRequiredTextWidth(numberChars, textPaint)
+      val numbersSize = getRequiredTextWidth(numberChars, textPaint)
+      val preTextSize = getRequiredTextWidth(preText, preTextPaint)
+
+      numbersSize + preTextSize
     } else {
       getRequiredTextWidth(defaultShowingChar, textPaint)
     }
@@ -535,6 +553,19 @@ class PriceTextView @JvmOverloads constructor(
         }
       }
     }
+
+    //Draw Pre Text
+    var x : Float= if (numberChars.size > 0 && !isAnimatingDefaultNumber) {
+      (drawingNumberTextBoundRect.left).toFloat()
+    } else {
+      (drawingNumberTextBoundRect.centerX() - (defaultCharWidth / 2)).toFloat()
+    }
+    x -= getRequiredTextWidth(preText, preTextPaint)
+    x -= preTextMargin
+
+    var y = drawingDefaultTextBoundRect.top + getRequiredTextHeight(preText, preTextPaint)
+    canvas?.drawText(preText, x, y, preTextPaint)
+
   }
 
   private fun getRequiredTextWidth(
@@ -566,6 +597,11 @@ class PriceTextView @JvmOverloads constructor(
     return requiredWidth
   }
 
+  private fun getRequiredTextWidth(
+    str: String,
+    textPaint: TextPaint
+  ) = getRequiredTextWidth(ArrayList(str.toCharArray().toList()), textPaint)
+
   private fun getRequiredTextHeight(
     char: Char,
     textPaint: TextPaint
@@ -592,5 +628,10 @@ class PriceTextView @JvmOverloads constructor(
     }
     return maxHeight
   }
+
+  private fun getRequiredTextHeight(
+    str: String,
+    textPaint: TextPaint
+  ) = getRequiredTextHeight(ArrayList(str.toCharArray().toList()), textPaint)
 
 }
