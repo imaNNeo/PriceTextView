@@ -28,7 +28,7 @@ class PriceTextView @JvmOverloads constructor(
 ) : View(context, attrs, defStyleAttr) {
 
   companion object {
-    const val DEBUG = true
+    const val DEBUG = false
   }
 
   var numberChars: ArrayList<Char> = arrayListOf()
@@ -314,7 +314,7 @@ class PriceTextView @JvmOverloads constructor(
       getRequiredTextHeight(defaultShowingChar, textPaint)
     }
 
-    val animationNeeded = addNumberAnimTranslateY * 2
+    val animationNeeded = addNumberAnimTranslateY * 4
     return height + Math.abs(animationNeeded) + verticalPadding
   }
 
@@ -570,7 +570,11 @@ class PriceTextView @JvmOverloads constructor(
     char: Char,
     textPaint: TextPaint
   ): Float {
-    textPaint.getTextBounds(char.toString(), 0, char.toString().length, drawingNumberTextBoundRect)
+    var checkingChar = char
+    if (checkingChar == '۰') {
+      checkingChar = '۱'
+    }
+    textPaint.getTextBounds(checkingChar.toString(), 0, checkingChar.toString().length, drawingNumberTextBoundRect)
     return drawingNumberTextBoundRect.height()
         .toFloat()
   }
