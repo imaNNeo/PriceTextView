@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+  <declare-styleable name="PriceTextView">
+    <attr name="ptv_default_showing_char" format="string" />
+    <attr name="ptv_thousands_separator_char" format="string" />
+    <attr name="ptv_enable_showing_thousands_separator" format="string" />
+    <attr name="ptv_text_space" format="dimension" />
+    <attr name="ptv_max_chars" format="integer" />
+    <attr name="ptv_pre_text" format="string" />
+    <attr name="ptv_pre_text_size" format="dimension" />
+    <attr name="ptv_pre_text_color" format="color" />
+    <attr name="ptv_pre_text_margin" format="dimension" />
+    <attr name="ptv_max_text_size" format="dimension" />
+    <attr name="ptv_min_text_size" format="dimension" />
+    <attr name="ptv_text_color" format="color" />
+  </declare-styleable>
+
+</resources>

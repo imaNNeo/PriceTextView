@@ -3,6 +3,7 @@ package com.neo.pricetextviewdemo
 import android.graphics.Typeface
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
+import com.neo.pricetextview.spToPx
 import com.neo.pricetextview.toPersianNumbers
 import kotlinx.android.synthetic.main.activity_main.*
 
@@ -25,8 +26,13 @@ class MainActivity : AppCompatActivity() {
     btn_0.setOnClickListener { onNumberClicked(0) }
     btn_back.setOnClickListener { onDeleteClicked() }
 
+    priceTextView1.setTypeface(Typeface.createFromAsset(assets, "GoogleSans-Regular.ttf"))
+    priceTextView1.preText = "$"
+    priceTextView1.preTextSize = spToPx(22f)
+
     priceTextView2.setTypeface(Typeface.createFromAsset(assets, "iransans.ttf"))
     priceTextView2.defaultShowingChar = '۰'
+    priceTextView2.preText = "تومان"
   }
 
   private fun onNumberClicked(i: Int) {

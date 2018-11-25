@@ -31,23 +31,78 @@ class PriceTextView @JvmOverloads constructor(
     const val DEBUG = false
   }
 
-  var numberChars: ArrayList<Char> = arrayListOf()
-  var defaultShowingChar = '0'
-  var thousandsSeparatorChar = ','
+  private var numberChars: ArrayList<Char> = arrayListOf()
+  var defaultShowingChar = ' '
+    set(value) {
+      field = value
+      requestLayout()
+    }
+
+  var thousandsSeparatorChar = ' '
+    set(value) {
+      field = value
+      requestLayout()
+    }
 
   var enabledShowingThousandsSeparator = true
+    set(value) {
+      field = value
+      requestLayout()
+    }
 
-  var textSpace: Float
+  var textSpace: Float = 0f
+    set(value) {
+      field = value
+      requestLayout()
+    }
 
-  var maxChars: Int
+  var maxChars: Int = 0
+    set(value) {
+      field = value
+      requestLayout()
+    }
 
-  var preText: String
-  var preTextSize : Float
-  var preTextColor : Int
-  var preTextMargin : Float
+  var preText: String = ""
+    set(value) {
+      field = value
+      requestLayout()
+    }
 
-  var maxTextSize = context.spToPx(100f)
-  var minTextSize = context.spToPx(48f)
+  var preTextSize: Float = 0f
+    set(value) {
+      field = value
+      requestLayout()
+    }
+
+  var preTextColor: Int = 0
+    set(value) {
+      field = value
+      invalidate()
+    }
+
+  var preTextMargin: Float = 0f
+    set(value) {
+      field = value
+      requestLayout()
+    }
+
+  var maxTextSize = 0f
+    set(value) {
+      field = value
+      requestLayout()
+    }
+
+  var minTextSize = 0f
+    set(value) {
+      field = value
+      requestLayout()
+    }
+
+  var textColor = 0
+    set(value) {
+      field = value
+      requestLayout()
+    }
 
   private val textPaint: TextPaint
   private val preTextPaint: TextPaint
@@ -57,9 +112,9 @@ class PriceTextView @JvmOverloads constructor(
   private val tmpRect1 = Rect()
   private val tmpRect2 = Rect()
 
-  var addNumberAnimDuration: Long = 250
-  var addNumberAnimTranslateX: Float = context.pxToDp(180f)
-  var addNumberAnimTranslateY: Float = context.pxToDp(-180f)
+  private var addNumberAnimDuration: Long = 250
+  private var addNumberAnimTranslateX: Float = context.pxToDp(180f)
+  private var addNumberAnimTranslateY: Float = context.pxToDp(-180f)
 
   private val horizontalPadding
     get() = paddingLeft + paddingRight
@@ -68,23 +123,69 @@ class PriceTextView @JvmOverloads constructor(
     get() = paddingTop + paddingBottom
 
   init {
-    textPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
-      color = Color.BLACK
-      textSize = maxTextSize
+    //Initial default values
+    defaultShowingChar = '0'
+    thousandsSeparatorChar = ','
+    enabledShowingThousandsSeparator = true
+    textSpace = context.pxToDp(0f)
+    maxChars = 8
+    preText = "$"
+    preTextSize = context.spToPx(20f)
+    preTextColor = Color.BLACK
+    preTextMargin = context.dpToPx(8f)
+    maxTextSize = context.spToPx(100f)
+    minTextSize = context.spToPx(48f)
+    textColor = Color.BLACK
+
+    attrs?.let {
+      val a = context.obtainStyledAttributes(attrs, R.styleable.PriceTextView)
+
+      var stringTemp: String?
+      stringTemp = a.getString(R.styleable.PriceTextView_ptv_default_showing_char)
+      if (stringTemp != null && stringTemp.isNotEmpty()) {
+        defaultShowingChar = stringTemp[0]
+      }
+
+      stringTemp = a.getString(R.styleable.PriceTextView_ptv_thousands_separator_char)
+      if (stringTemp != null && stringTemp.isNotEmpty()) {
+        thousandsSeparatorChar = stringTemp[0]
+      }
+
+      enabledShowingThousandsSeparator = a.getBoolean(R.styleable.PriceTextView_ptv_enable_showing_thousands_separator, enabledShowingThousandsSeparator)
+
+      textSpace = a.getDimension(R.styleable.PriceTextView_ptv_text_space, textSpace)
+
+      maxChars = a.getInteger(R.styleable.PriceTextView_ptv_max_chars, maxChars)
+
+      stringTemp = a.getString(R.styleable.PriceTextView_ptv_pre_text)
+      if (stringTemp != null && stringTemp.isNotEmpty()) {
+        preText = stringTemp
+      }
+
+      preTextSize = a.getDimension(R.styleable.PriceTextView_ptv_text_space, preTextSize)
+
+      preTextColor = a.getColor(R.styleable.PriceTextView_ptv_pre_text_color, preTextColor)
+
+      preTextMargin = a.getDimension(R.styleable.PriceTextView_ptv_pre_text_margin, preTextMargin)
+
+      maxTextSize = a.getDimension(R.styleable.PriceTextView_ptv_max_text_size, maxTextSize)
+
+      minTextSize = a.getDimension(R.styleable.PriceTextView_ptv_min_text_size, minTextSize)
+
+      textColor = a.getColor(R.styleable.PriceTextView_ptv_text_color, textColor)
+
+      a.recycle()
     }
 
-    preText = "pre"
-    preTextColor = Color.BLACK
-    preTextSize = context.spToPx(20f)
+    textPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+      color = textColor
+      textSize = maxTextSize
+    }
     preTextPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
       color = preTextColor
       textSize = preTextSize
     }
-    preTextMargin = context.dpToPx(8f)
 
-    textSpace = context.pxToDp(0f)
-
-    maxChars = 8
   }
 
   private fun calculateTextSize(numbersList: ArrayList<Char>): Float {
@@ -294,7 +395,7 @@ class PriceTextView @JvmOverloads constructor(
     Log.d("SS", "Start Animating From $currentTextSize, to $newTextSize")
   }
 
-  fun setTypeface(tf : Typeface?) {
+  fun setTypeface(tf: Typeface?) {
     if (tf == null) {
       return
     }
@@ -302,6 +403,7 @@ class PriceTextView @JvmOverloads constructor(
     textPaint.typeface = tf
     requestLayout()
   }
+
   override fun onMeasure(
     widthMeasureSpec: Int,
     heightMeasureSpec: Int
@@ -350,20 +452,20 @@ class PriceTextView @JvmOverloads constructor(
     drawText(canvas)
   }
 
-  var isAnimatingLastNumber = false
-  var animatingLastNumberPlusX = 0f
-  var animatingLastNumberPlusY = 0f
-  var animatingLastNumberAlpha = 255
+  private var isAnimatingLastNumber = false
+  private var animatingLastNumberPlusX = 0f
+  private var animatingLastNumberPlusY = 0f
+  private var animatingLastNumberAlpha = 255
 
-  var animatingDrawingBoundLeft = 0
-  var animatingDrawingBoundTop = 0
-  var animatingDrawingBoundRight = 0
-  var animatingDrawingBoundBottom = 0
+  private var animatingDrawingBoundLeft = 0
+  private var animatingDrawingBoundTop = 0
+  private var animatingDrawingBoundRight = 0
+  private var animatingDrawingBoundBottom = 0
 
-  var isAnimatingDefaultNumber = false
-  var animatingDefaultNumberPlusX = 0f
-  var animatingDefaultNumberPlusY = 0f
-  var animatingDefaultNumberAlpha = 255
+  private var isAnimatingDefaultNumber = false
+  private var animatingDefaultNumberPlusX = 0f
+  private var animatingDefaultNumberPlusY = 0f
+  private var animatingDefaultNumberAlpha = 255
 
   private fun drawText(canvas: Canvas?) {
 
@@ -483,7 +585,10 @@ class PriceTextView @JvmOverloads constructor(
             (i == numberChars.size - (((numberChars.size - (i + 1)) / 3) * 3) - 1)
       }
 
-      Log.d("FF", "i : $i, separatorsCountToDraw : $separatorsCountToDraw, separatorsCountToDrawOnThisPos : $separatorsCountToDrawOnThisPos, shouldDrawSeparatorAtThisPos : $shouldDrawSeparatorAtThisPos")
+      Log.d(
+          "FF",
+          "i : $i, separatorsCountToDraw : $separatorsCountToDraw, separatorsCountToDrawOnThisPos : $separatorsCountToDrawOnThisPos, shouldDrawSeparatorAtThisPos : $shouldDrawSeparatorAtThisPos"
+      )
 
       //Assigned number char bounds
       var left =
@@ -555,7 +660,7 @@ class PriceTextView @JvmOverloads constructor(
     }
 
     //Draw Pre Text
-    var x : Float= if (numberChars.size > 0 && !isAnimatingDefaultNumber) {
+    var x: Float = if (numberChars.size > 0 && !isAnimatingDefaultNumber) {
       (drawingNumberTextBoundRect.left).toFloat()
     } else {
       (drawingNumberTextBoundRect.centerX() - (defaultCharWidth / 2)).toFloat()
